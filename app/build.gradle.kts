@@ -43,7 +43,7 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
             if (isKeyStoreAvailable) {
-                signingConfig = signingConfigs.getByName("release")
+                signingConfig = signingConfigs.getByName("debug")
             }
         }
     }
