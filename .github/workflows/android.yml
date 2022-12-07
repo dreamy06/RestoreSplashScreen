@@ -1,12 +1,14 @@
 name: Android CI
 
 on:
+  workflow_dispatch:
   push:
-    branches: ["master"]
+    branches: ["main"]
     paths-ignore:
       - 'README.md'
+      - 'LICENSE'
   pull_request:
-    branches: ["master"]
+    branches: ["main"]
 
 jobs:
   build:
@@ -35,6 +37,10 @@ jobs:
           path: |
             ~/.gradle/caches/build-cache-*
           key: gradle-builds-${{ github.sha }}
+      
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Init Submodule
         run: |
@@ -45,7 +51,7 @@ jobs:
         run: chmod +x gradlew
         
       - name: Build
-        run: bash ./gradlew build
+        run: bash ./gradlew assembleRelease
 
       - name: Build with Gradle
         run: |
@@ -56,9 +62,16 @@ jobs:
           KEYSTORE_PASS: ${{ secrets.KEY_STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      
+      - name: Prepare artifact
+        if: success()
+        id: prepareArtifact
+        run: |
+          releasename=`ls app/build/outputs/apk/CI/release/*.apk | awk -F '(/|.apk)' '{print $7}'` && echo "::set-output name=releasename::$releasename"
 
       - name: Upload release
+        if: success()
         uses: actions/upload-artifact@v3
         with:
-          name: RestoreSplashScreen_Release
-          path: "app/build/outputs/apk/CI/release/*.apk"
+          name: ${{ steps.prepareArtifact.outputs.releasename }}-${{ steps.date.outputs.date }}-release
+          path: app/build/outputs/apk/CI/release/*.apk

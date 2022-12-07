@@ -43,7 +43,7 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
             if (isKeyStoreAvailable) {
-                signingConfig = signingConfigs.getByName("release")
+                signingConfig = signingConfigs.getByName("debug")
             }
         }
     }
@@ -53,7 +53,7 @@ android {
         create("CI") {
             dimension = "tier"
             versionCode = defaultConfig.versionCode?.plus(1)
-            versionName = "${defaultConfig.versionName?.split(" - ")?.get(0)}${getGitHeadRefsSuffix(rootProject)}"
+            versionName = "${defaultConfig.versionName?.split(" - ")?.get(0)}.r${defaultConfig.versionCode}${getGitHeadRefsSuffix(rootProject)}"
         }
         create("app") {
             dimension = "tier"
@@ -113,7 +113,7 @@ fun getGitHeadRefsSuffix(project: Project): String {
             string.substring(0, 7)
         }
         println("commit_id: $result")
-        return "-CI.$result"
+        return ".$result"
     } else {
         println("WARN: .git/HEAD does NOT exist")
         return ""
