@@ -17,16 +17,9 @@ import kotlinx.coroutines.launch
 
 object BlockMIUIHelper {
 
-    fun LinearLayout.addBlockMIUIView(context: Context, itemData: InitView.ItemData.() -> Unit) {
-        val dataList: HashMap<String, InitView.ItemData> = hashMapOf()
-
-        InitView(dataList).register("BlockMIUIHelper", "", true, itemData)
-
-        for (item: BaseView in dataList["BlockMIUIHelper"]?.itemList ?: arrayListOf()) {
-            MainScope().launch {
-                addItem(this@addBlockMIUIView, item, context)
-            }
-        }
+    fun LinearLayout.addBlockMIUIView(context: Context, itemData: BlockMIUIItemData.() -> Unit) =
+        BlockMIUIItemData().apply(itemData).itemList.forEach {
+            MainScope().launch { addItem(this@addBlockMIUIView, it, context) }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -70,12 +63,8 @@ object BlockMIUIHelper {
                     }
                 }
                 is SwitchView -> addView(item.create(context, callBacks)) // 开关
-                is TextWithSwitchView, is TextSummaryWithSwitchView -> {
-                    val switch: SwitchView = when (item) {
-                        is TextWithSwitchView -> item.switchV
-                        is TextSummaryWithSwitchView -> item.switchV
-                        else -> throw IllegalArgumentException("item not is TextWithSwitchV or TextSummaryWithSwitchV")
-                    }
+                is TextSummaryWithSwitchView -> {
+                    val switch: SwitchView = item.switchV
                     addView(item.create(context, callBacks)) // 带文本的开关
                     setOnTouchListener { _, motionEvent ->
                         when (motionEvent.action) {
@@ -96,7 +85,7 @@ object BlockMIUIHelper {
                     }
                 }
                 is TitleTextV -> addView(item.create(context, callBacks)) // 标题文字
-                is LineView -> addView(item.create(context, callBacks)) // 分割线
+                is LineV -> addView(item.create(context, callBacks)) // 分割线
                 is LinearContainerV -> addView(item.create(context, callBacks)) // 布局创建
                 is AuthorV -> { // 作者框
                     addView(item.create(context, callBacks).apply {
