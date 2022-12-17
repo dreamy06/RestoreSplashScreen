@@ -24,6 +24,7 @@ import com.gswxxn.restoresplashscreen.utils.YukiHelper.setField
 import com.highcapable.yukihookapi.hook.bean.VariousClass
 import com.highcapable.yukihookapi.hook.factory.current
 import com.highcapable.yukihookapi.hook.factory.field
+import com.highcapable.yukihookapi.hook.param.HookParam
 import com.highcapable.yukihookapi.hook.type.android.ActivityInfoClass
 import com.highcapable.yukihookapi.hook.type.android.DrawableClass
 import com.highcapable.yukihookapi.hook.type.java.BooleanType
@@ -232,16 +233,16 @@ object SystemUIHooker: BaseHooker() {
                                     mSplashscreenContentDrawer.getField("mDefaultIconSize").int().toFloat()
                             val densityDpi = instance.getField("mContext").cast<Context>()!!.resources.configuration.densityDpi
                             val scaledIconDpi = (0.5f + iconScale * densityDpi * 1.2f).toInt()
-                            if (Build.VERSION.SDK_INT == 31) {
-                                mSplashscreenContentDrawer.getField("mIconProvider").any()!!.current {
-                                    args(0).set(method { name = "getIcon"; paramCount(2) }
-                                        .invoke<Drawable>(instance.getField("mActivityInfo").any(), scaledIconDpi))
+                            if (Build.VERSION.SDK_INT == 33) {
+                                mSplashscreenContentDrawer.getField("mHighResIconProvider").any()!!.current {
+                                    args(0).set(method { name = "getIcon"; param(ActivityInfoClass, IntType, IntType) }
+                                        .invoke<Drawable>(instance.getField("mActivityInfo").any(), densityDpi, scaledIconDpi))
                                     printLog("9. createIconDrawable(): replace the icons processed by the system")
                                 }
                             } else{
-                                mSplashscreenContentDrawer.getField("mHighResIconProvider").any()!!.current {
-                                    args(0).set(method { name = "getIcon"; paramCount(3) }
-                                        .invoke<Drawable>(instance.getField("mActivityInfo").any(), densityDpi, scaledIconDpi))
+                                mSplashscreenContentDrawer.getField("mIconProvider").any()!!.current {
+                                    args(0).set(method { name = "getIcon"; param(ActivityInfoClass, IntType) }
+                                        .invoke<Drawable>(instance.getField("mActivityInfo").any(), scaledIconDpi))
                                     printLog("9. createIconDrawable(): replace the icons processed by the system")
                                 }
                             }
@@ -411,22 +412,31 @@ object SystemUIHooker: BaseHooker() {
          *   .$StartingWindowViewBuilder.fillViewWithIcon() 中被调用
          */
 
-        findClass("android.window.SplashScreenView\$Builder").hook {
-            injectMember {
-                constructor()
-                method {
-                    name = "isStaringWindowUnderNightMode"
-                    emptyParam()
-                }
-                beforeHook {
-                    if (pref.get(DataConst.IGNORE_DARK_MODE)) {
-                        resultFalse()
-                        printLog(
-                            "11. isStaringWindowUnderNightMode(): ignore dark mode"
-                        )
+        if (pref.get(DataConst.IGNORE_DARK_MODE)) {
+            val ignoreDarkModeHook: HookParam.() -> Unit = {
+                resultFalse()
+                printLog(
+                    "11. isStaringWindowUnderNightMode(): ignore dark mode"
+                )
+            }
+            findClass("android.window.SplashScreenView\$Builder").hook {
+                injectMember {
+                    method {
+                        name = "isStaringWindowUnderNightMode"
+                        emptyParam()
                     }
-                }
-            }.ignoredNoSuchMemberFailure()
+                    beforeHook(ignoreDarkModeHook)
+                }.ignoredNoSuchMemberFailure()
+            }
+            findClass("android.view.ForceDarkHelperStubImpl").hook {
+                injectMember {
+                    method {
+                        name = "updateForceDarkSplashScreen"
+                        paramCount(3)
+                    }
+                    beforeHook(ignoreDarkModeHook)
+                }.ignoredNoSuchMemberFailure()
+            }
         }
 
         // 遮罩最小持续时间
