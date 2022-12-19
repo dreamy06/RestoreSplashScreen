@@ -41,10 +41,16 @@ object BackgroundSettings : ISubSettings {
             for (item in changeColorTypeItems) {
                 add(item.value) {
                     context.modulePrefs.put(DataConst.CHANG_BG_COLOR_TYPE, item.key)
-                    context.sendToHost(DataConst.CHANG_BG_COLOR_TYPE)
+                    context.sendToHost()
                 }
             }
         })
+
+        // 如果应用主动设置了背景颜色则不替换
+        TextSummaryWithSwitch(
+            TextSummaryV(textId = R.string.skip_app_with_bg_color), SwitchView(
+                DataConst.SKIP_APP_WITH_BG_COLOR), dataBindingRecv = changeBGColorTypeBinding.getRecv(1)
+        )
 
         // 单独配置应用背景颜色
         TextSummaryArrow(TextSummaryV(textId = R.string.configure_bg_colors_individually, onClickListener = {
@@ -65,7 +71,7 @@ object BackgroundSettings : ISubSettings {
             for (item in colorModeItems) {
                 add(item.value) {
                     context.modulePrefs.put(DataConst.BG_COLOR_MODE, item.key)
-                    context.sendToHost(DataConst.BG_COLOR_MODE)
+                    context.sendToHost()
                 }
             }
         }, dataBindingRecv = changeBGColorTypeBinding.getRecv(1))
